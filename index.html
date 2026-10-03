@@ -183,7 +183,7 @@
         <div class="field"><label>Reason for extra lecture <span class="req">*</span></label><input type="text" id="f_extra_reason"></div>
         <div class="field"><label>Permission by Head (Principal) <span class="req">*</span></label>
           <select id="f_extra_head"><option value="">— select —</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
-        <div class="field full"><label>Attach Permission Letter</label><input type="file" id="f_extra_file" accept="image/*,.pdf"><span class="file-preview" id="f_extra_filename"></span><span class="hint">Optional — stored securely via Google Drive and linked to this record.</span></div>
+        <div class="field full"><label>Attach Permission Letter <span class="req">*</span></label><input type="file" id="f_extra_file" accept="image/*,.pdf"><span class="file-preview" id="f_extra_filename"></span><span class="hint">Required — image or PDF only, max 100 KB. Stored securely via Google Drive and linked to this record.</span></div>
       </div>
     </div>
     <div class="conditional exch" id="block_exch" style="display:none">
@@ -329,7 +329,7 @@
       Execute as: Me, Who has access: Anyone).
    2. Paste the resulting /exec URL below.
    ===================================================================== */
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbwvp_QoI4RAEaw-kr3HwCkQ7x1IGIj-X03wNvO_axGdqRkLXodzdAhrdRYHvdN5yCgARw/exec'; // ends in /exec
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwuBSVJ_n-8kEPRHxWVa1B5VnA2OybYB95CjWei9L08OTC4clAOxRbq_OnoD7Sl3EVN2A/exec'; // ends in /exec
 
 function gasRunner_(){
   var successFn=null, failureFn=null;
@@ -479,9 +479,9 @@ for(var t=0;t<tabBtns.length;t++){tabBtns[t].onclick=function(){
 /* ---------- DROPDOWNS ---------- */
 /* ---------- Fixed class codes per department ---------- */
 var DEPT_CLASSES = {
-  'Civil':       ['CR-2-K','CR-4-K','CR-6-K'],
-  'Computer':    ['CO-2-K','CO-4-K','CO-6-K'],
-  'Electronics': ['EX-2-K','EX-4-K','EX-6-K']
+  'Civil':       ['CR-1-K','CR-3-K','CR-5-K'],
+  'Computer':    ['CO-1-K','CO-3-K','CO-5-K'],
+  'Electronics': ['EX-1-K','EX-3-K','EX-5-K']
 };
 // Active department for the entry form: lecturer's login dept, or admin's picked dept.
 function activeDept(){
@@ -549,7 +549,15 @@ var segBatch=$('seg_batch').querySelectorAll('button');
 for(var sb=0;sb<segBatch.length;sb++)segBatch[sb].onclick=function(){batch=this.dataset.v;for(var i=0;i<segBatch.length;i++)segBatch[i].classList.toggle('on',segBatch[i]===this);};
 $('f_type').onchange=function(){$('block_extra').style.display=this.value==='Extra'?'block':'none';$('block_exch').style.display=this.value==='Exchanged'?'block':'none';};
 var extraFileData=null;
-$('f_extra_file').onchange=function(){var f=this.files[0];if(!f){extraFileData=null;$('f_extra_filename').textContent='';return;}var r=new FileReader();r.onload=function(){extraFileData=r.result;$('f_extra_filename').textContent='Attached: '+f.name;};r.readAsDataURL(f);};
+var MAX_LETTER_BYTES=100*1024;
+$('f_extra_file').onchange=function(){
+  var f=this.files[0];
+  if(!f){extraFileData=null;$('f_extra_filename').textContent='';return;}
+  var okType = f.type==='application/pdf' || f.type.indexOf('image/')===0;
+  if(!okType){toast('Only image or PDF files are allowed.',true);this.value='';extraFileData=null;$('f_extra_filename').textContent='';return;}
+  if(f.size>MAX_LETTER_BYTES){toast('File is too large — max 100 KB allowed.',true);this.value='';extraFileData=null;$('f_extra_filename').textContent='';return;}
+  var r=new FileReader();r.onload=function(){extraFileData=r.result;$('f_extra_filename').textContent='Attached: '+f.name+' ('+Math.round(f.size/1024)+' KB)';};r.readAsDataURL(f);
+};
 
 /* ---------- SIGNATURE PADS ---------- */
 var pads={};
@@ -588,6 +596,7 @@ $('btn_save').onclick=function(){
   if(e.type==='Extra'){
     if(!e.extra_reason)miss.push('Reason for extra lecture');
     if(!e.extra_head)miss.push('Permission by Head (Principal)');
+    if(!e.letterB64)miss.push('Permission Letter attachment');
   }
   if(e.type==='Exchanged'){
     if(!e.exch_with)miss.push('Exchanged with (lecturer)');
